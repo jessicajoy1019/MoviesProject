@@ -9,7 +9,7 @@ rename(`Disney+`=Disney.,
   mutate(Country= strsplit(Country, split=",")) %>%
   mutate(`Rotten Tomatoes`= gsub("%","",`Rotten Tomatoes`)) %>%
   mutate(`Rotten Tomatoes`= as.numeric(`Rotten Tomatoes`)) %>%
-  mutate(Age = fct_relevel(Age, 
+  mutate(Age = forcats::fct_relevel(Age, 
                            "18+", "16+", "13+", 
                            "7+", "all"))
 
@@ -28,7 +28,7 @@ countrymovies <- movies %>% full_join(result)
 cc <- countrymovies %>% select(-ID,-Title,-Year,-Age,-IMDb,
                                -`Rotten Tomatoes`,-Directors,
                                -Genres,-Country, -Language, -Runtime) %>%
-  gather(country, value, -Netflix,-Hulu,-`Prime Video`,-`Disney+`) %>%
+  tidyr::gather(country, value, -Netflix,-Hulu,-`Prime Video`,-`Disney+`) %>%
   filter(value == '1') %>%
   select(-value) %>% group_by(country) %>% 
   summarise(Netflix=sum(Netflix=='1'),
@@ -74,7 +74,7 @@ totals <- genremovies %>%
             Hulu=sum(Hulu=='1'),
             `Prime Video` = sum(`Prime Video`=='1'),
             `Disney+` =sum(`Disney+`=='1')) %>%
-  gather('Streaming Service', 'Total')
+  tidyr::gather('Streaming Service', 'Total')
 
 # select variables
 choice <- colnames(movies[7:10])
