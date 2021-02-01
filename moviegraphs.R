@@ -1,25 +1,20 @@
 library(tidyverse)
 
+#Code for local trials
 
 movies <- read.csv(file = "movies.csv")
 movies <- movies %>% select(-Type, -X) %>%
+  rename(`Disney+`=Disney.,
+         `Prime Video`=Prime.Video,
+         `Rotten Tomatoes`=Rotten.Tomatoes) %>%
   mutate(Country = as.character(Country)) %>% 
   mutate(Country= strsplit(Country, split=",")) %>%
   mutate(`Rotten Tomatoes`= gsub("%","",`Rotten Tomatoes`)) %>%
-  mutate(`Rotten Tomatoes`= as.numeric(`Rotten Tomatoes`))
+  mutate(`Rotten Tomatoes`= as.numeric(`Rotten Tomatoes`)) %>%
+  mutate(Age = fct_relevel(Age, 
+                           "18+", "16+", "13+", 
+                           "7+", "all"))
 
-class(movies$Country)
-
-N <- movies %>% filter(Netflix=='1')
-
-# Movie count by years
-movies %>% group_by(Year) %>% 
-  summarise(Netflix= sum(Netflix == "1"),
-            Hulu= sum(Hulu == "1"),
-            Prime=sum(`Prime Video` == "1"),
-            Disney=sum(`Disney +` =="1")) %>% 
-              gather( "Streaming Service", "Count", -Year) %>% ggplot(aes(Year, Count)) + 
-              geom_col(aes(fill = `Streaming Service`), position = "dodge") + facet_wrap(~`Streaming Service`)
 
 # Rotten Tomatoes average
 
@@ -35,16 +30,9 @@ m %>% ggplot(aes(x=`Rotten Tomatoes Score`, color=`Streaming Service`)) +
   geom_density(alpha = 0.2) 
   
 
-
-
-#movie count
-movies %>% summarise(Netflix= sum(Netflix == "1"),
-            Hulu= sum(Hulu == "1"),
-            Prime=sum(`Prime Video` == "1"),
-            Disney=sum(`Disney+`=="1")) %>% gather( "Streaming Service", "Count") %>% ggplot(aes(`Streaming Service`, Count)) + 
-  geom_bar(stat='identity', position = "dodge")
-
 #netflix age distribution
+N <- movies %>% filter(Netflix=='1')
+
 N %>% filter(!(Age==""))%>%
   mutate(Age = fct_relevel(Age, 
                            "18+", "16+", "13+", 
@@ -79,6 +67,17 @@ countrymovies %>% filter(`United States`=='1') %>%
             P=sum(Prime.Video=='1'),
             D=sum(Disney.=='1'))
 
+cc <- countrymovies %>% select(-ID,-Title,-Year,-Age,-IMDb,
+                             -`Rotten Tomatoes`,-Directors,
+                         -Genres,-Country, -Language, -Runtime) %>%
+  gather(country, value, -Netflix,-Hulu,-`Prime Video`,-`Disney+`) %>%
+  filter(value == '1') %>%
+  select(-value) %>% group_by(country) %>%
+  summarise(Netflix=sum(Netflix=='1'),
+             Hulu=sum(Hulu=='1'),
+             `Prime Video`=sum(`Prime Video`=='1'),
+             `Disney+`=sum(`Disney+`=='1'))
+
 
 
 
@@ -97,16 +96,22 @@ names(genres_result) <- gsub(".", " ", names(genres_result), fixed = TRUE)
 genres_result <- tibble::rowid_to_column(genres_result, "ID")
 
 genremovies <- movies %>% full_join(genres_result)
-genremovies <- as.data.frame(genremovies)
-
+totals <- genremovies %>% 
+  summarise(N = sum(Netflix=='1'),
+            H=sum(Hulu=='1'),
+            P = sum(`Prime Video`=='1'),
+            D=sum(`Disney+`=='1')) %>%
+  gather('Streaming Service', 'Total')
 
 genremovies %>% filter(Action=='1') %>% 
   summarise(N=sum(Netflix=='1'),
             H=sum(Hulu=='1'),
             P=sum(`Prime Video`=='1'),
-            D=sum(`Disney+`=='1'))  %>% gather( "Streaming Service", "Count") %>% 
-  ggplot(aes(`Streaming Service`, Count)) + 
-  geom_bar(stat='identity', position = "dodge")
+            D=sum(`Disney+`=='1')) %>% 
+  gather( "Streaming Service", "Count") %>% 
+  left_join(totals, by = 'Streaming Service') %>% 
+  mutate(percent = round((Count/Total)*100, 2))
+
 
 
 
