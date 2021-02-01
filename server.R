@@ -2,7 +2,7 @@ library(DT)
 library(shiny)
 library(googleVis)
 library(tidyverse)
-library(dplyr)
+
 
 shinyServer(function(input, output){
   
@@ -76,7 +76,7 @@ shinyServer(function(input, output){
                   Hulu=sum(Hulu=='1'),
                   `Prime Video`=sum(`Prime Video`=='1'),
                   `Disney+`=sum(`Disney+`=='1'))%>%
-        gather( "Streaming Service", "Count") %>% 
+        tidyr::gather( "Streaming Service", "Count") %>% 
         left_join(totals, by = 'Streaming Service') %>% 
         mutate(Percent = round((Count/Total)*100, 2))
     })    
